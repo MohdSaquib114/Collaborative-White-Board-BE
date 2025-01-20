@@ -19,8 +19,8 @@ socketServer.on("connection",(socket:WebSocket)=>{
   console.log("User connected") 
  socket.on("message",(data)=>{
    const message:MessageType = JSON.parse(data.toString())
-   const roomId = message.roomId
-   const username = message.payload.username
+   const roomId = message?.roomId
+ 
 
   switch(message.type){
 
@@ -31,6 +31,7 @@ socketServer.on("connection",(socket:WebSocket)=>{
         const response = {
             type:"createRoom",
             roomId:newRoomId,
+            host:message.payload?.username,
             success:true
         } 
         socket.send(JSON.stringify(response))
@@ -92,7 +93,8 @@ socketServer.on("connection",(socket:WebSocket)=>{
                 
             }))
             socket.send(JSON.stringify({
-                success:true
+                success:true,
+                roomId:message.roomId 
             }))
         }
 
