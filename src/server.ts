@@ -11,13 +11,14 @@ type MessageType = {
   
 
 const rooms : Map<string,RoomType> = new Map()
-
+console.log(rooms)
 const socketServer = new WebSocketServer({port:8080})
 
 socketServer.on("connection",(socket:WebSocket)=>{
- 
+
   console.log("User connected") 
- socket.on("message",(data)=>{
+  socket.on("message",(data)=>{
+  
    const message:MessageType = JSON.parse(data.toString())
    const roomId = message?.roomId
  
@@ -106,6 +107,7 @@ socketServer.on("connection",(socket:WebSocket)=>{
             socket.send(JSON.stringify({
                 message:"Room does not exist"}
             ))
+            return
         }
         if(insideRoom?.users){
 
