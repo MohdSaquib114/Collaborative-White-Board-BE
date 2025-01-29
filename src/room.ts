@@ -1,31 +1,39 @@
 import WebSocket from "ws";
-
-type userMap = Map<string,WebSocket>;
+type UserType = {
+    socket:WebSocket,
+    isHost:boolean
+}
+type userMap = Map<string,UserType>;
+type messageType = {
+    username:string,
+    message:string
+}
 
 export type RoomType = {
-    host:WebSocket,
-    hostName:string,
+
     users:userMap,
-    addUser:(name:string,socket:WebSocket)=>boolean
+    messages:messageType[]
+    addUser:(name:string,socket:WebSocket,isHost:boolean)=>boolean
     removeUser:(name:string)=>boolean
-    assignNewHost:()=>string | undefined
+    // assignNewHost:()=>string | undefined
+    addMessage:(username:string,message:string) => void
 }
 
 export class Room {
    
-    host:WebSocket;
-    hostName:string;
-    users:userMap = new Map()
-    constructor(host:WebSocket,name:string){
-       this.host = host
-       this.hostName = name
+    users:userMap
+    messages:messageType[]
+    constructor(){
+        this.users = new Map()
+         this.messages = []
+       
     }
-    addUser(name:string,socket:WebSocket):boolean{
-        const existingUser = this.users.get(name)
+    addUser(username:string,socket:WebSocket,isHost:boolean):boolean{
+        const existingUser = this.users.get(username)
         if(existingUser){
             return false
         }
-        this.users.set(name,socket)
+        this.users.set(username,{socket,isHost})
         return true
     }
 
@@ -38,14 +46,20 @@ export class Room {
        
         return false
     }
-  assignNewHost():string | undefined {
-    const [username,userSocket] = this.users.entries().next().value || []
-    if(username && userSocket){
-        this.host = userSocket
-        this.hostName = username
-        this.users.delete(username)
-    }
-    return username 
+//   assignNewHost():string | undefined {
+//     const [username,userSocket] = this.users.entries().next().value || []
+//     if(username && userSocket){
+//         this.host = userSocket
+//         this.hostName = username
+//         this.users.delete(username)
+//     }
+//     return username 
+//   }
+  addMessage(username:string,message:string){
+    this.messages.push({username,message})
   }
+getMessage(){
+    return this.messages
+}
 
 }
