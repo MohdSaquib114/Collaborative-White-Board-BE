@@ -13,7 +13,7 @@ const rooms: Record<string, RoomType> = {};
 const socketServer = new WebSocketServer({ port: 8080 });
 
 socketServer.on("connection", (socket: WebSocket) => {
-  console.log("User connected");
+ 
 
   socket.on("message", (data) => {
     const message: MessageType = JSON.parse(data.toString());
@@ -82,7 +82,7 @@ socketServer.on("connection", (socket: WebSocket) => {
             })
           );
         } else {
-          console.log(message.payload.username);
+       
           currentRoom.users.set(message.payload.username, { socket: socket, isHost: false });
           currentRoom.users.forEach((user, username) => {
             if (username !== message.payload.username) {
@@ -190,7 +190,7 @@ socketServer.on("connection", (socket: WebSocket) => {
           return;
         }
         const roomForCanvas = rooms[roomId];
-        console.log(2322)
+     
         roomForCanvas.users.forEach((user) => {
           if(socket !== user.socket){
 
@@ -230,10 +230,10 @@ socketServer.on("connection", (socket: WebSocket) => {
             })
           );
         } else {
-          console.log("remove-user", message.payload.username);
+         
           roomRemove?.users.delete(message.payload?.username);
-          console.log("user deleted");
-          roomRemove?.users.forEach((userSocket, user) => {
+       
+            roomRemove?.users.forEach((userSocket, user) => {
             userSocket.socket.send(
               JSON.stringify({
                 type: "remove",
@@ -250,6 +250,7 @@ socketServer.on("connection", (socket: WebSocket) => {
   });
   
   socket.on("close", () => {
+    
     console.log("User disconnected");
   });
 });
