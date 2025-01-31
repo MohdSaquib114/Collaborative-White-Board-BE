@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+    "build": "tsc -b",
+    "start": "cd dist/src && node server.js"
+   },
   "keywords": [],
   "author": "",
   "license": "ISC",
