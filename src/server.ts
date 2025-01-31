@@ -22,47 +22,43 @@ socketServer.on("connection", (socket: WebSocket) => {
     switch (message.type) {
       case "createRoom":
         try {
-          
           const room: RoomType = new Room();
           const newRoomId = uuidv4();
           
-          room.addUser(message.payload.username,socket,true)
+          room.addUser(message.payload.username, socket, true);
           rooms[newRoomId] = room;
           
           const response = {
             type: "createRoom",
             success: true,
-            payload:{
+            payload: {
               roomId: newRoomId,
               username: message.payload?.username,
-              isHost:true
-            }
+              isHost: true,
+            },
           };
           
           socket.send(JSON.stringify(response));
         } catch (error) {
-          
-          socket.send(JSON.stringify({
-            success:false,
-            type:'createRoom'
-          }));
+          socket.send(
+            JSON.stringify({
+              success: false,
+              type: "createRoom",
+            })
+          );
         }
-
         break;
 
       case "addUser":
-      
         const currentRoom = rooms[roomId as string];
-       
         if (!roomId || !message.payload?.username) {
           socket.send(
             JSON.stringify({
               type: "addUser",
               success: false,
-              payload:{
-
-                message: "Room id or username  is not provided",
-              }
+              payload: {
+                message: "Room id or username is not provided",
+              },
             })
           );
         } else if (!currentRoom) {
@@ -70,10 +66,9 @@ socketServer.on("connection", (socket: WebSocket) => {
             JSON.stringify({
               type: "addUser",
               success: false,
-              payload:{
-
+              payload: {
                 message: "No room exists",
-              }
+              },
             })
           );
         } else if (currentRoom.users.has(message.payload.username)) {
@@ -81,211 +76,180 @@ socketServer.on("connection", (socket: WebSocket) => {
             JSON.stringify({
               type: "addUser",
               success: false,
-              payload:{
-
+              payload: {
                 message: "User already in the room",
-              }
+              },
             })
           );
         } else {
-          console.log(message.payload.username)
-          currentRoom.users.set(message.payload.username, {socket:socket,isHost:false});
+          console.log(message.payload.username);
+          currentRoom.users.set(message.payload.username, { socket: socket, isHost: false });
           currentRoom.users.forEach((user, username) => {
             if (username !== message.payload.username) {
               user.socket.send(
                 JSON.stringify({
                   type: "addUser",
                   success: true,
-                  payload:{
-
+                  payload: {
                     message: `${message.payload.username} joined the room`,
                     username: message.payload.username,
-                  }
+                  },
                 })
               );
             }
           });
-        
+          
           socket.send(
             JSON.stringify({
               success: true,
-              type:"addUser",
-              payload:{
-
+              type: "addUser",
+              payload: {
                 roomId: message.roomId,
-                username:message.payload.username,
-                isHost:false
-              }
+                username: message.payload.username,
+                isHost: false,
+              },
             })
           );
-         
         }
         break;
 
       case "room":
-       
         const insideRoom = rooms[roomId as string];
-       
         if (!insideRoom) {
           socket.send(
             JSON.stringify({
-                type: "room",
-                success:false,
-                payload:{
-
-                  message: "Room does not exist",
-                }
+              type: "room",
+              success: false,
+              payload: {
+                message: "Room does not exist",
+              },
             })
           );
           return;
         }
-      
-          const users: string[] = Array.from(insideRoom?.users?.keys()) || [];
+        if (!insideRoom.users.has(message.payload.username)) {
+          insideRoom.addUser(message.payload.username, socket, message.payload.isHost);
+        }
+        const users: string[] = Array.from(insideRoom?.users?.keys()) || [];
         
-            socket.send(
-              JSON.stringify({
-                type: "room",
-                success:true,
-                payload:{
-                  users:users,
-                  messages:insideRoom.messages
-                }
-              
-              })
-            );
-        //   });
-       
-        //   socket.send(
-        //     JSON.stringify({
-        //       message: "Room is empty",
-        //     })
-        //   );
-        
+        socket.send(
+          JSON.stringify({
+            type: "room",
+            success: true,
+            payload: {
+              users: users,
+              messages: insideRoom.messages,
+            },
+          })
+        );
         break;
+
       case "message":
-        const {username,newMessage} = message.payload
-        if(!roomId) {
+        const { username, newMessage } = message.payload;
+        if (!roomId) {
           socket.send(
             JSON.stringify({
               type: "addUser",
               success: false,
-              payload:{
-
+              payload: {
                 message: "Room id is not provided",
-              }
+              },
             })
           );
-          return
-        } 
-        const currentRoomM = rooms[roomId]
-        currentRoomM.addMessage(username,newMessage)
-        currentRoomM.users.forEach((user, username) => {
-          if (username !== message.payload.username) {
+          return;
+        }
+        const currentRoomM = rooms[roomId];
+        currentRoomM.addMessage(username, newMessage);
+        currentRoomM.users.forEach((user) => {
+          user.socket.send(
+            JSON.stringify({
+              type: "message",
+              success: true,
+              payload: {
+                message: newMessage,
+                username: message.payload.username,
+              },
+            })
+          );
+        });
+        break;
+
+      case "canvasUpdate":
+      
+      
+        if (!roomId) {
+          socket.send(
+            JSON.stringify({
+              type: "canvasUpdate",
+              success: false,
+              payload: {
+                message: "Room id is not provided",
+              },
+            })
+          );
+          return;
+        }
+        const roomForCanvas = rooms[roomId];
+        console.log(2322)
+        roomForCanvas.users.forEach((user) => {
+          if(socket !== user.socket){
+
             user.socket.send(
               JSON.stringify({
-                type: "message",
+                type: "canvasUpdate",
                 success: true,
-                payload:{
-                  message: newMessage,
-                  username: message.payload.username,
-                }
+                payload: {
+                  canvasData: message.payload,
+                },
               })
             );
           }
-        });
-
-       
+          });
         break;
-
 
       case "removeUser":
         const roomRemove = rooms[roomId as string];
         if (!roomRemove) {
           socket.send(
             JSON.stringify({
-              type: "removeUser",
+              type: "remove",
               success: false,
-              payload:{
-
+              payload: {
                 message: "Room id is not provided",
-              }
+              },
             })
           );
-        }  else if (!message.payload?.username) {
+        } else if (!message.payload?.username) {
           socket.send(
             JSON.stringify({
-              type: "removeUser",
+              type: "remove",
               success: false,
-              payload:{
-
+              payload: {
                 message: "Username is not provided",
-              }
+              },
             })
           );
         } else {
-          console.log(message.payload.username)
+          console.log("remove-user", message.payload.username);
           roomRemove?.users.delete(message.payload?.username);
+          console.log("user deleted");
           roomRemove?.users.forEach((userSocket, user) => {
-            // if (socket !== userSocket.socket) {
-              userSocket.socket.send(
-                JSON.stringify({
-                    type:"removeUser",
-                    success:true,
-                    payload:{
-
-                      username:message.payload.username
-                    }
-                })
-              );
-            // }
+            userSocket.socket.send(
+              JSON.stringify({
+                type: "remove",
+                success: true,
+                payload: {
+                  username: message.payload.username,
+                },
+              })
+            );
           });
-          
+        }
         break;
     }
-  }
   });
-
+  
   socket.on("close", () => {
     console.log("User disconnected");
-    Object.entries(rooms).forEach(([roomId, room]) => {
-    //   if (socket === room.host) {
-    //     const oldHostName = room.hostName;
-    //     const newHostName = room.assignNewHost();
-    //     if (newHostName) {
-    //       room.users.forEach((userSocket, username) => {
-    //         userSocket.send(
-    //           JSON.stringify({
-    //             message: `Host ${oldHostName} left the room. New host is ${newHostName}`,
-    //           })
-    //         );
-    //       });
-    //     } else {
-    //       delete rooms[roomId];
-    //     }
-    //   } else {
-        let user = "";
-        for (const [username, userSocket] of room.users.entries()) {
-          if (userSocket.socket === socket) {
-            room.users.delete(username);
-            user = username;
-            console.log(`Removed ${username} from room ${roomId}`);
-          }
-        }
-        room.users.forEach((userSocket, username) => {
-          userSocket.socket.send(
-            JSON.stringify({
-              type:"removeUser",
-              success:true,
-              payload:{
-                message: `${user} left the room`,
-
-              }
-            })
-          );
-        });
-
-
-      
-    });
   });
 });
