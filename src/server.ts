@@ -145,7 +145,7 @@ socketServer.on("connection", (socket: WebSocket) => {
         break;
 
       case "message":
-        const { username, newMessage } = message.payload;
+        const { username, message:newMessage } = message.payload;
         if (!roomId) {
           socket.send(
             JSON.stringify({
@@ -159,6 +159,7 @@ socketServer.on("connection", (socket: WebSocket) => {
           return;
         }
         const currentRoomM = rooms[roomId];
+        console.log(newMessage,username)
         currentRoomM.addMessage(username, newMessage);
         currentRoomM.users.forEach((user) => {
           user.socket.send(
